@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Firebase Auth + Firestore Bulk Upload</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    input, button {
+      padding: 8px;
+      margin: 6px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+    // Your Firebase config (replace with your actual config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwo04RojGZhggWNkSvv8RXLzU4bGfUOP0",
+      authDomain: "mediwise-medicals.firebaseapp.com",
+      projectId: "mediwise-medicals",
+      storageBucket: "mediwise-medicals.firebasestorage.app",
+      messagingSenderId: "1062856274593",
+      appId: "1:1062856274593:web:971645cac05d2c0da236e0",
+      measurementId: "G-1SB18RFW38"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Elements
+    let statusElem;
+
+    // Dummy product data generator with your specified fields
+function generateDummyProducts() {
+  const products = [];
+  for (let i = 1; i <= 30; i++) {
+    products.push({
+      ProductName: `Product ${i}`,
+      ProductDescription: `This is the description for Product ${i}.`,
+      ProductImg: "https://i.imgur.com/ZTkt4I5.jpg",
+      MRP: (100 + i * 5).toFixed(2),          // Example MRP price
+      SellingPrice: (90 + i * 4).toFixed(2),  // Example Selling Price (less than MRP)
+      quantity:0,
+      quantityPurchased:0
+    });
+  }
+  return products;
+}
+
+    // Upload cards to Firestore
+    async function uploadCards() {
+      const cards = generateDummyProducts();
+      const colRef = collection(db, "cards");
+      statusElem.textContent = "Uploading cards...";
+      for (const card of cards) {
+        try {
+          await addDoc(colRef, card);
+          console.log(`Uploaded: ${card.title}`);
+        } catch (err) {
+          console.error("Error uploading:", card.title, err);
+          statusElem.textContent = `Error uploading: ${card.title}`;
+          return;
+        }
+      }
+      statusElem.textContent = "All cards uploaded successfully!";
+    }
+
+    // Login function
+    async function login(email, password) {
+      try {
+        statusElem.textContent = "Signing in...";
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        statusElem.textContent = `Signed in as ${userCredential.user.email}. Starting upload...`;
+        await uploadCards();
+      } catch (error) {
+        console.error(error);
+        statusElem.textContent = "Login failed: " + error.message;
+      }
+    }
+
+    window.onload = () => {
+      statusElem = document.getElementById("status");
+
+      const loginForm = document.getElementById("login-form");
+      loginForm.addEventListener("submit", e => {
+        e.preventDefault();
+        const email = loginForm.email.value.trim();
+        const password = loginForm.password.value.trim();
+        if (!email || !password) {
+          statusElem.textContent = "Please enter email and password.";
+          return;
+        }
+        login(email, password);
+      });
+    };
+  </script>
+</head>
+<body>
+  <h2>Login to Upload Cards</h2>
+  <form id="login-form">
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Sign In & Upload</button>
+  </form>
+  <div id="status"></div>
+</body>
+</html>
