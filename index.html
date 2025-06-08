@@ -12,11 +12,6 @@
             color: white;
         }
 
-        .card {
-            background-color: #222;
-            color: white;
-            margin-bottom: 20px;
-        }
 
         .pagination {
             justify-content: center;
@@ -35,10 +30,68 @@
                 transform: rotate(360deg);
             }
         }
+
+        .product-img {
+            height: 300px;
+            width: 100%;
+            object-fit: fill;
+            /* stretches image to fill the area */
+        }
+
+        .card {
+            height: 100%;
+            /* ensures consistent height */
+            display: flex;
+            flex-direction: column;
+            background-color: #222;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .card-body {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .info-col {
+            flex: 1;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Fullscreen Image Overlay -->
+    <!-- Fullscreen Image Overlay -->
+    <div id="imageOverlay" style="
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100vw; height:100vh;
+    background:rgba(0,0,0,0.8);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+">
+        <img id="zoomedImage" src="" style="
+        max-width:90%;
+        max-height:90%;
+        border:4px solid white;
+        border-radius:8px;
+        box-shadow:0 0 15px rgba(255,255,255,0.5);
+        transform: scale(0.6);
+        opacity: 0;
+        transition: transform 0.35s ease, opacity 0.35s ease;
+    " />
+    </div>
+
     <!--begin::Page loading(append to body)-->
     <!-- Fullscreen Loader -->
     <div id="full-screen-loader"
@@ -135,18 +188,27 @@
                 const col = document.createElement("div");
                 col.className = "col-md-4";
                 col.innerHTML = `
-                <div class="card">
-                    <img src="${data.ProductImg}" class="card-img-top" alt="${data.ProductName}" />
-                    <div class="card-body">
-                        <h5 class="card-title">${data.ProductName}</h5>
-                        <p class="card-text">${data.ProductDescription}</p>
-                        <p class="card-text"><strong>MRP:</strong> ₹${data.MRP}</p>
-                        <p class="card-text"><strong>Selling Price:</strong> ₹${data.SellingPrice}</p>
-                        <p class="card-text"><strong>Available Quantity:</strong> ${data.quantity}</p>
-                        <p class="card-text"><strong>Purchased:</strong> ${data.quantityPurchased}</p>
-                        <button class="btn btn-outline-primary btn-sm">Buy Now</button>
-                    </div>
-                </div>`;
+                                <div class="card h-100">
+                                    <img src="${data.ProductImg}" class="card-img-top product-img" alt="${data.ProductName}" />
+                                    <div class="card-body d-flex flex-column justify-content-between">
+                                    <h5 class="card-title">${data.ProductName}</h5>
+                                    <p class="card-text">${data.ProductDescription}</p>
+
+                                    <div class="info-row">
+                                        <p class="card-text info-col"><strong>MRP:</strong> ₹${data.MRP}</p>
+                                        <p class="card-text info-col"><strong>Selling:</strong> ₹${data.SellingPrice}</p>
+                                    </div>
+
+                                    <div class="info-row">
+                                        <p class="card-text info-col"><strong>Qty:</strong> ${data.quantity}</p>
+                                        <p class="card-text info-col"><strong>Purchased:</strong> ${data.quantityPurchased}</p>
+                                    </div>
+
+                                    <button class="btn btn-outline-primary btn-sm mt-2">Buy Now</button>
+                                    </div>
+                                </div>
+                                `;
+
                 cardContainer.appendChild(col);
             });
         }
@@ -239,7 +301,7 @@
                         if (p !== currentPage) {
                             showLoading();
                             try {
-                                 await loadPage(p);
+                                await loadPage(p);
                             } catch (error) {
                                 console.error("Error loading page:", error);
                             } finally {
@@ -380,6 +442,43 @@
 
 
     </script>
+    <script>
+        const overlay = document.getElementById("imageOverlay");
+        const zoomedImage = document.getElementById("zoomedImage");
+
+        // Click thumbnail
+        document.addEventListener("click", function (e) {
+            if (e.target.classList.contains("product-img")) {
+                zoomedImage.src = e.target.src;
+                overlay.style.display = "flex";
+                document.body.style.overflow = "hidden";
+
+                // Delay the animation to allow image to load
+                setTimeout(() => {
+                    zoomedImage.style.transform = "scale(1)";
+                    zoomedImage.style.opacity = "1";
+                }, 50);
+            }
+        });
+
+        // Close on overlay click or Escape
+        overlay.addEventListener("click", function () {
+            zoomedImage.style.transform = "scale(0.6)";
+            zoomedImage.style.opacity = "0";
+            document.body.style.overflow = "auto";
+
+            setTimeout(() => {
+                overlay.style.display = "none";
+            }, 350); // match transition duration
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                overlay.click();
+            }
+        });
+    </script>
+
 
 </body>
 
